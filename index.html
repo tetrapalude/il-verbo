@@ -1,0 +1,596 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Analisi Logica</title>
+<meta name="description" content="Strumento di analisi logica per frasi italiane" />
+<meta name="theme-color" content="#1a1a2e" />
+<link rel="manifest" href="data:application/json,{
+  %22name%22:%22Analisi Logica%22,
+  %22short_name%22:%22Analisi%22,
+  %22start_url%22:%22.%22,
+  %22display%22:%22standalone%22,
+  %22background_color%22:%22%231a1a2e%22,
+  %22theme_color%22:%22%231a1a2e%22,
+  %22icons%22:[{%22src%22:%22data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E📖%3C/text%3E%3C/svg%3E%22,%22sizes%22:%22any%22,%22type%22:%22image/svg+xml%22}]
+}" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #0f0f1a;
+  --bg2: #16162a;
+  --bg3: #1e1e38;
+  --border: rgba(255,255,255,0.08);
+  --border2: rgba(255,255,255,0.15);
+  --text: #e8e6f0;
+  --text2: #9997b0;
+  --text3: #6663808;
+  --accent: #c4b5fd;
+  --accent2: #7c6fcd;
+  --green: #86efac;
+  --green-bg: rgba(134,239,172,0.1);
+  --green-border: rgba(134,239,172,0.25);
+  --blue: #93c5fd;
+  --blue-bg: rgba(147,197,253,0.1);
+  --blue-border: rgba(147,197,253,0.25);
+  --purple: #c4b5fd;
+  --purple-bg: rgba(196,181,253,0.1);
+  --purple-border: rgba(196,181,253,0.25);
+  --amber: #fcd34d;
+  --amber-bg: rgba(252,211,77,0.1);
+  --amber-border: rgba(252,211,77,0.35);
+  --radius: 10px;
+  --radius-sm: 6px;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'DM Sans', sans-serif;
+  font-weight: 300;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.bg-grid {
+  position: fixed; inset: 0; z-index: 0; pointer-events: none;
+  background-image:
+    linear-gradient(rgba(196,181,253,0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(196,181,253,0.03) 1px, transparent 1px);
+  background-size: 40px 40px;
+}
+
+.glow {
+  position: fixed; top: -200px; left: 50%; transform: translateX(-50%);
+  width: 600px; height: 400px; z-index: 0; pointer-events: none;
+  background: radial-gradient(ellipse, rgba(124,111,205,0.15) 0%, transparent 70%);
+}
+
+main {
+  position: relative; z-index: 1;
+  width: 100%; max-width: 680px;
+  padding: 3rem 1.25rem 4rem;
+}
+
+header {
+  text-align: center;
+  margin-bottom: 3rem;
+}
+
+.logo {
+  font-family: 'Instrument Serif', serif;
+  font-size: clamp(2rem, 6vw, 3rem);
+  font-weight: 400;
+  color: var(--text);
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+}
+
+.logo em {
+  font-style: italic;
+  color: var(--accent);
+}
+
+.subtitle {
+  margin-top: 0.5rem;
+  font-size: 14px;
+  color: var(--text2);
+  letter-spacing: 0.02em;
+}
+
+.api-section {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.25rem;
+  margin-bottom: 1.5rem;
+}
+
+.api-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text2);
+  margin-bottom: 0.5rem;
+}
+
+.api-row {
+  display: flex; gap: 8px; align-items: center;
+}
+
+.api-input {
+  flex: 1;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 10px 14px;
+  color: var(--text);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 14px;
+  font-weight: 300;
+  outline: none;
+  transition: border-color 0.2s;
+  letter-spacing: 0.05em;
+}
+
+.api-input::placeholder { color: var(--text2); opacity: 0.5; }
+.api-input:focus { border-color: var(--accent2); }
+
+.save-btn {
+  background: var(--purple-bg);
+  border: 1px solid var(--purple-border);
+  border-radius: var(--radius-sm);
+  padding: 10px 16px;
+  color: var(--accent);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 13px;
+  font-weight: 400;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.2s;
+}
+.save-btn:hover { background: rgba(196,181,253,0.18); }
+.save-btn.saved { color: var(--green); background: var(--green-bg); border-color: var(--green-border); }
+
+.api-hint {
+  margin-top: 0.6rem;
+  font-size: 12px;
+  color: var(--text2);
+}
+.api-hint a { color: var(--accent); text-decoration: none; }
+.api-hint a:hover { text-decoration: underline; }
+
+.input-card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.25rem;
+  margin-bottom: 1.5rem;
+}
+
+.input-row {
+  display: flex; gap: 8px;
+}
+
+.frase-input {
+  flex: 1;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 12px 16px;
+  color: var(--text);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 15px;
+  font-weight: 300;
+  outline: none;
+  transition: border-color 0.2s;
+}
+.frase-input::placeholder { color: var(--text2); opacity: 0.4; }
+.frase-input:focus { border-color: var(--accent2); }
+
+.analizza-btn {
+  background: var(--accent2);
+  border: none;
+  border-radius: var(--radius-sm);
+  padding: 12px 20px;
+  color: #fff;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: opacity 0.2s, transform 0.1s;
+  white-space: nowrap;
+}
+.analizza-btn:hover { opacity: 0.85; }
+.analizza-btn:active { transform: scale(0.97); }
+.analizza-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.examples-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text2);
+  margin-top: 1rem;
+  margin-bottom: 0.5rem;
+}
+
+.examples {
+  display: flex; flex-wrap: wrap; gap: 6px;
+}
+
+.ex-btn {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 5px 12px;
+  color: var(--text2);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 12px;
+  font-weight: 300;
+  cursor: pointer;
+  transition: color 0.2s, border-color 0.2s;
+}
+.ex-btn:hover { color: var(--text); border-color: var(--border2); }
+
+#output { }
+
+.loading {
+  display: flex; align-items: center; gap: 10px;
+  color: var(--text2); font-size: 14px;
+  padding: 1.5rem 0;
+}
+
+.spinner {
+  width: 18px; height: 18px;
+  border: 2px solid var(--border2);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.result-card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.5rem;
+  animation: fadeIn 0.3s ease;
+}
+@keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+
+.frase-display {
+  font-family: 'Instrument Serif', serif;
+  font-size: 1.3rem;
+  color: var(--text);
+  margin-bottom: 0.4rem;
+  line-height: 1.5;
+}
+
+.tipo-badge {
+  display: inline-block;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding: 3px 10px;
+  border-radius: 20px;
+  margin-bottom: 1.25rem;
+}
+.tipo-verbale { background: var(--green-bg); color: var(--green); border: 1px solid var(--green-border); }
+.tipo-nominale { background: var(--blue-bg); color: var(--blue); border: 1px solid var(--blue-border); }
+
+.tag-row { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 1rem; }
+
+.tag {
+  display: flex; flex-direction: column; gap: 2px;
+  padding: 7px 12px;
+  border-radius: var(--radius-sm);
+  border: 1px solid;
+  transition: transform 0.15s;
+}
+.tag:hover { transform: translateY(-1px); }
+.tag.ambiguo { border-style: dashed; }
+
+.tag-label {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  opacity: 0.65;
+}
+.tag-word {
+  font-size: 14px;
+  font-weight: 400;
+}
+.tag-ambig {
+  font-size: 10px;
+  opacity: 0.6;
+  display: flex; align-items: center; gap: 3px;
+}
+
+.tag-soggetto    { background: var(--blue-bg);   border-color: var(--blue-border);   color: var(--blue); }
+.tag-predicato   { background: var(--green-bg);  border-color: var(--green-border);  color: var(--green); }
+.tag-complemento { background: var(--purple-bg); border-color: var(--purple-border); color: var(--purple); }
+.tag-ambiguo.tag-complemento { border-color: var(--amber-border); background: var(--amber-bg); color: var(--amber); }
+
+.note-list { display: flex; flex-direction: column; gap: 6px; margin-top: 0.75rem; }
+
+.note-item {
+  font-size: 12px;
+  color: var(--text2);
+  padding: 7px 12px;
+  background: var(--bg3);
+  border-radius: var(--radius-sm);
+  border-left: 2px solid var(--amber-border);
+  line-height: 1.5;
+}
+.note-item strong { color: var(--amber); font-weight: 400; }
+
+.note-generale {
+  font-size: 12px;
+  color: var(--text2);
+  padding: 7px 12px;
+  background: var(--bg3);
+  border-radius: var(--radius-sm);
+  border-left: 2px solid var(--border2);
+  line-height: 1.5;
+}
+
+.legend {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 11px; color: var(--text2);
+  margin-top: 0.75rem;
+}
+.legend-dash {
+  width: 20px; height: 0;
+  border-top: 1.5px dashed var(--amber-border);
+}
+
+.error-msg {
+  background: rgba(239,68,68,0.1);
+  border: 1px solid rgba(239,68,68,0.25);
+  border-radius: var(--radius);
+  padding: 1rem 1.25rem;
+  color: #fca5a5;
+  font-size: 14px;
+}
+
+@media (max-width: 480px) {
+  main { padding: 2rem 1rem 3rem; }
+  .logo { font-size: 2rem; }
+  .analizza-btn { padding: 12px 14px; }
+}
+</style>
+</head>
+<body>
+<div class="bg-grid"></div>
+<div class="glow"></div>
+
+<main>
+  <header>
+    <div class="logo">Analisi <em>logica</em></div>
+    <p class="subtitle">Soggetto, predicato e complementi per frasi italiane</p>
+  </header>
+
+  <div class="api-section">
+    <div class="api-label">Chiave API Anthropic</div>
+    <div class="api-row">
+      <input class="api-input" type="password" id="api-key" placeholder="sk-ant-..." autocomplete="off" />
+      <button class="save-btn" id="save-btn" onclick="salvaChiave()">Salva</button>
+    </div>
+    <p class="api-hint">
+      Ottieni la tua chiave su <a href="https://console.anthropic.com" target="_blank">console.anthropic.com</a>.
+      Viene salvata solo nel browser, non viene inviata da nessuna parte.
+    </p>
+  </div>
+
+  <div class="input-card">
+    <div class="input-row">
+      <input class="frase-input" type="text" id="frase-input" placeholder="Il cane corre nel parco." />
+      <button class="analizza-btn" id="analizza-btn" onclick="analizza()">Analizza</button>
+    </div>
+    <div class="examples-label">Esempi</div>
+    <div class="examples">
+      <button class="ex-btn" onclick="loadExample(this)">La mela è di plastica.</button>
+      <button class="ex-btn" onclick="loadExample(this)">Maria studia con attenzione.</button>
+      <button class="ex-btn" onclick="loadExample(this)">Il treno è in ritardo.</button>
+      <button class="ex-btn" onclick="loadExample(this)">Luca regala un libro a Sara.</button>
+      <button class="ex-btn" onclick="loadExample(this)">Il figlio di Marco arriva domani.</button>
+    </div>
+  </div>
+
+  <div id="output"></div>
+</main>
+
+<script>
+const CHIAVE_KEY = 'analisi_logica_api_key';
+
+window.addEventListener('DOMContentLoaded', () => {
+  const salvata = localStorage.getItem(CHIAVE_KEY);
+  if (salvata) {
+    document.getElementById('api-key').value = salvata;
+    document.getElementById('save-btn').textContent = '✓ Salvata';
+    document.getElementById('save-btn').classList.add('saved');
+  }
+});
+
+function salvaChiave() {
+  const k = document.getElementById('api-key').value.trim();
+  if (!k) return;
+  localStorage.setItem(CHIAVE_KEY, k);
+  const btn = document.getElementById('save-btn');
+  btn.textContent = '✓ Salvata';
+  btn.classList.add('saved');
+}
+
+function loadExample(btn) {
+  document.getElementById('frase-input').value = btn.textContent;
+  analizza();
+}
+
+function getChiave() {
+  return document.getElementById('api-key').value.trim() || localStorage.getItem(CHIAVE_KEY) || '';
+}
+
+function colorClass(f) {
+  if (f === 'soggetto') return 'tag-soggetto';
+  if (f.startsWith('predicato')) return 'tag-predicato';
+  return 'tag-complemento';
+}
+
+function labelPer(f) {
+  const map = {
+    'soggetto': 'Soggetto',
+    'predicato verbale': 'Predicato verbale',
+    'predicato nominale (copula)': 'Copula',
+    'predicato nominale (nome del predicato)': 'Nome del predicato',
+    'complemento oggetto': 'Compl. oggetto',
+    'complemento di specificazione': 'Compl. specificazione',
+    'complemento di termine': 'Compl. termine',
+    'complemento di luogo': 'Compl. di luogo',
+    'complemento di tempo': 'Compl. di tempo',
+    'complemento di modo': 'Compl. di modo',
+    'complemento di causa': 'Compl. di causa',
+    'complemento di mezzo': 'Compl. di mezzo',
+    'complemento di compagnia': 'Compl. di compagnia',
+    "complemento d'agente": "Compl. d'agente",
+    'complemento di argomento': 'Compl. di argomento',
+    'altro complemento': 'Complemento',
+  };
+  return map[f] || f;
+}
+
+function estraiJSON(testo) {
+  const match = testo.match(/\{[\s\S]*\}/);
+  if (match) return JSON.parse(match[0]);
+  throw new Error('Risposta non valida dal modello');
+}
+
+async function analizza() {
+  const frase = document.getElementById('frase-input').value.trim();
+  if (!frase) return;
+
+  const chiave = getChiave();
+  if (!chiave) {
+    document.getElementById('output').innerHTML =
+      '<div class="error-msg">Inserisci la tua chiave API Anthropic per usare lo strumento.</div>';
+    return;
+  }
+
+  const btn = document.getElementById('analizza-btn');
+  btn.disabled = true;
+  btn.textContent = '...';
+
+  document.getElementById('output').innerHTML =
+    '<div class="loading"><div class="spinner"></div> Analisi in corso…</div>';
+
+  const prompt = `Sei un esperto di grammatica italiana. Analizza logicamente questa frase.
+
+Frase da analizzare: ${frase}
+
+Rispondi SOLO con JSON valido, nessun testo prima o dopo, nessun backtick.
+{
+  "tipo_predicato": "verbale oppure nominale",
+  "elementi": [
+    {
+      "parole": "gruppo di parole con articoli e preposizioni inclusi",
+      "funzione": "soggetto oppure predicato verbale oppure predicato nominale (copula) oppure predicato nominale (nome del predicato) oppure complemento oggetto oppure complemento di specificazione oppure complemento di termine oppure complemento di luogo oppure complemento di tempo oppure complemento di modo oppure complemento di causa oppure complemento di mezzo oppure complemento di compagnia oppure complemento d'agente oppure complemento di argomento oppure altro complemento",
+      "ambiguo": false,
+      "nota": ""
+    }
+  ],
+  "note_generali": ""
+}
+Regole: se predicato nominale separa copula e nome del predicato. Metti ambiguo true e spiega nella nota se la funzione è incerta.`;
+
+  try {
+    const res = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-api-key": chiave,
+        "anthropic-version": "2023-06-01",
+        "anthropic-dangerous-direct-browser-access": "true"
+      },
+      body: JSON.stringify({
+        model: "claude-sonnet-4-20250514",
+        max_tokens: 1000,
+        messages: [{ role: "user", content: prompt }]
+      })
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error?.message || 'Errore API ' + res.status);
+    }
+
+    const data = await res.json();
+    const raw = data.content.map(b => b.text || "").join("");
+    const parsed = estraiJSON(raw);
+    renderResult(frase, parsed);
+  } catch(e) {
+    document.getElementById('output').innerHTML =
+      `<div class="error-msg">⚠ ${e.message || 'Errore durante l\'analisi. Riprova.'}</div>`;
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Analizza';
+  }
+}
+
+function renderResult(frase, data) {
+  const noteAmbigue = [];
+  let tagsHTML = '';
+
+  for (const el of data.elementi) {
+    const isAmbiguo = el.ambiguo && el.nota;
+    const cc = colorClass(el.funzione);
+    const ambClass = isAmbiguo ? ' ambiguo' : '';
+    const ambNote = isAmbiguo ? `<span class="tag-ambig">⚠ ambiguo</span>` : '';
+    tagsHTML += `<div class="tag ${cc}${ambClass}">
+      <span class="tag-label">${labelPer(el.funzione)}</span>
+      <span class="tag-word">${el.parole}</span>
+      ${ambNote}
+    </div>`;
+    if (isAmbiguo) noteAmbigue.push({ parole: el.parole, nota: el.nota });
+  }
+
+  const tipoCls = data.tipo_predicato === 'nominale' ? 'tipo-nominale' : 'tipo-verbale';
+  const tipoLabel = data.tipo_predicato === 'nominale' ? 'Predicato nominale' : 'Predicato verbale';
+
+  let noteHTML = '';
+  if (data.note_generali || noteAmbigue.length) {
+    noteHTML = '<div class="note-list">';
+    if (data.note_generali) {
+      noteHTML += `<div class="note-generale">${data.note_generali}</div>`;
+    }
+    for (const n of noteAmbigue) {
+      noteHTML += `<div class="note-item"><strong>${n.parole}</strong>: ${n.nota}</div>`;
+    }
+    noteHTML += '</div>';
+  }
+
+  const legendHTML = noteAmbigue.length
+    ? `<div class="legend"><div class="legend-dash"></div> bordo tratteggiato + giallo = complemento ambiguo</div>`
+    : '';
+
+  document.getElementById('output').innerHTML = `
+    <div class="result-card">
+      <div class="frase-display">${frase}</div>
+      <div class="tipo-badge ${tipoCls}">${tipoLabel}</div>
+      <div class="tag-row">${tagsHTML}</div>
+      ${legendHTML}
+      ${noteHTML}
+    </div>`;
+}
+
+document.getElementById('frase-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') analizza();
+});
+</script>
+</body>
+</html>
